@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PS4 | التشخيص</title>
+<style>
+:root{color-scheme:dark;background:#080d0a;color:#eef5f0;font:15px/1.55 system-ui,sans-serif}body{margin:0;padding:12px}.wrap{width:min(760px,100%);margin:0 auto}.top{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px}.top b{font-size:15px}.top span{color:#78867e;font-size:10px}.panel{border:1px solid #29372f;border-radius:12px;background:#101712;overflow:hidden}.head{padding:12px 14px;border-bottom:1px solid #29372f}.head strong{font-size:13px}.body{padding:12px 14px}pre{margin:0;max-height:68vh;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;direction:ltr;text-align:left;background:#080c09;border:1px solid #29372f;border-radius:9px;padding:12px;font:11px/1.45 Consolas,monospace}.actions{display:flex;gap:7px;margin-bottom:9px}.actions button,.actions a{flex:1;min-height:38px;border:1px solid #34443a;border-radius:8px;background:#131c16;color:#eef5f0;font:700 11px system-ui;text-decoration:none;display:flex;align-items:center;justify-content:center;cursor:pointer}.status{margin:8px 0;color:#98a89e;font-size:10px}.ok{color:#91e5ae}.warn{color:#efd27f}.bad{color:#f18c83}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><b>تشخيص PS4</b><span>v13.5.3</span></div>
+  <main class="panel"><div class="head"><strong>آخر محاولة</strong><div style="color:#7f8d84;font-size:10px;margin-top:3px">يحاول حفظ التقرير على USB0 وUSB1 و/data و/user/data، مع تحقق الكتابة وإعادة القراءة عند توفرها.</div></div><div class="body">
+    <div class="actions"><a href="index.html">المشغّل</a><button id="refresh" type="button">تحديث</button><button id="copy" type="button">نسخ</button><button id="clear" type="button">مسح</button></div>
+    <div id="status" class="status">جارٍ القراءة…</div><div id="usbPath" class="status"></div><div id="storageStatus" class="status"></div><div id="perfStatus" class="status"></div><div id="storageMatrix" class="status"></div>
+    <pre id="report">—</pre>
+  </div></main>
+</div>
+<script src="diagnostics_v1353.js?v=20261003-1353"></script>
+<script>
+(function(){
+  "use strict";
+  var key="ps4-stability-diagnostic-v4",historyKey="ps4-stability-diagnostic-history-v4",usbKey="ps4-stability-usb-report-path",pathsKey="ps4-stability-diagnostic-paths-v4",report=document.getElementById("report"),status=document.getElementById("status"),usbPath=document.getElementById("usbPath"),storageStatus=document.getElementById("storageStatus"),perfStatus=document.getElementById("perfStatus"),storageMatrix=document.getElementById("storageMatrix");
+  function read(){var stores=[];try{stores.push(localStorage)}catch(e){}try{stores.push(sessionStorage)}catch(e){}for(var i=0;i<stores.length;i++){try{var c=JSON.parse(stores[i].getItem(key)||"null"),h=JSON.parse(stores[i].getItem(historyKey)||"[]");if(!Array.isArray(h))h=[];if(c||h.length)return{current:c,history:h}}catch(e){}}return null}
+  function clean(v){return v?{schemaVersion:v.schemaVersion,buildVersion:v.buildVersion,startedAt:v.startedAt,attemptId:v.attemptId,firmware:v.firmware,appCacheSupported:v.appCacheSupported,persistence:v.persistence,events:v.events,result:v.result,storage:v.storage,finalized:v.finalized}:null}
+  function render(){var v=read();var extra=null;try{extra=JSON.parse(localStorage.getItem(pathsKey)||"null")}catch(e){}var text=v?JSON.stringify({current:clean(v.current),previousAttempts:(v.history||[]).map(clean),latestStorageAttempt:extra},null,2):"لا يوجد تقرير محفوظ.";report.textContent=text;var r=v&&v.current&&v.current.result;status.textContent=!v?"لا يوجد تقرير محفوظ.":r&&r.allDone?(r.payloadRunning?"اكتملت آخر محاولة والحمولة مؤكدة.":"اكتملت المراحل الرئيسية؛ الحمولة غير مؤكدة."):(r?"انتهت المحاولة دون اكتمال؛ راجع الأحداث.":"التقرير محفوظ بانتظار نتيجة نهائية.");status.className="status "+(r&&r.allDone?(r.payloadRunning?"ok":"warn"):r?"bad":"");var path=null;try{path=localStorage.getItem(usbKey)}catch(e){}if(usbPath)usbPath.textContent=path?"آخر مسار ناجح: "+path:"الحفظ الآلي يجرب USB0 ثم USB1 ثم /data ثم /user/data.";var sr=extra&&Array.isArray(extra)?extra:(v.current&&Array.isArray(v.current.storage)?v.current.storage:null);if(storageStatus){if(sr&&sr.length){storageStatus.textContent="نتيجة الحفظ: "+sr.map(function(x){return (x.ok?"✓ ":"✗ ")+x.path+(x.ok?"":" · "+(x.stage||"error")+" errno="+(x.errno==null?"?":x.errno))}).join("  |  ");storageStatus.className="status "+(sr.some(function(x){return x&&x.ok})?"ok":"bad")}else{storageStatus.textContent="لم تُسجل محاولات حفظ ملف بعد.";storageStatus.className="status warn"}}
+  if(perfStatus){var ev=v&&v.current&&Array.isArray(v.current.events)?v.current.events:[];var last=ev.length?ev[ev.length-1].ms:0;var maxGap=0,maxA="",maxB="";for(var pi=1;pi<ev.length;pi++){var gap=Math.max(0,(ev[pi].ms||0)-(ev[pi-1].ms||0));if(gap>maxGap){maxGap=gap;maxA=ev[pi-1].event||"";maxB=ev[pi].event||""}}perfStatus.textContent=ev.length?("قياس الأداء: "+Math.round(last/1000*10)/10+"s · أكبر فجوة مسجلة "+Math.round(maxGap/100)/10+"s ("+maxA+" → "+maxB+")"):"لا توجد بيانات أداء بعد.";perfStatus.className="status"}if(storageMatrix){var rr=sr||[];var labels={"/mnt/usb0/PS4-STABILITY-DIAGNOSTIC.txt":"USB0","/mnt/usb1/PS4-STABILITY-DIAGNOSTIC.txt":"USB1","/data/PS4-STABILITY-DIAGNOSTIC.txt":"DATA","/user/data/PS4-STABILITY-DIAGNOSTIC.txt":"USER/DATA"};var parts=rr.map(function(x){var label=labels[x.path]||x.path;var ok=!!(x&&x.ok&&x.finalOk);return (ok?"✓ ":"✗ ")+label+(ok?"":" "+(x.stage||"error")+"/"+(x.errno==null?"?":x.errno));});storageMatrix.textContent=parts.length?("التخزين: "+parts.join("  |  ")):"التخزين: لم تبدأ محاولة بعد.";storageMatrix.className="status "+(parts.length&&rr.some(function(x){return x&&x.ok&&x.finalOk})?"ok":"warn")} }
+  document.getElementById("refresh").addEventListener("click",render,false);
+  document.getElementById("copy").addEventListener("click",function(){var t=report.textContent||"";try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(function(){status.textContent="تم نسخ التقرير."},function(){fallback(t)});return}}catch(e){}fallback(t);function fallback(text){var f=document.createElement("textarea");f.value=text;f.style.cssText="position:fixed;left:-9999px";document.body.appendChild(f);try{f.focus();f.select();document.execCommand("copy");status.textContent="تم النسخ أو تحديد النص للنسخ."}catch(e){status.textContent="حدد النص يدويًا من التقرير."}try{document.body.removeChild(f)}catch(e){}}},false);
+  document.getElementById("clear").addEventListener("click",function(){try{localStorage.removeItem(key);localStorage.removeItem(historyKey)}catch(e){}try{sessionStorage.removeItem(key);sessionStorage.removeItem(historyKey)}catch(e){}render()},false);
+  render();
+})();
+</script>
+</body>
+</html>
