@@ -1,0 +1,27 @@
+CACHE MANIFEST
+# rev 20261005-v13.5-stability-hardened-offline
+
+CACHE:
+index.html
+jb.html
+jb.js
+jb.js?v=20
+jb.js?v=21
+core.js
+core.js?v=10
+mem.js
+int64.js
+ps4_offsets.js
+rpc_worker.js
+offline_assets.js
+offline_assets.js?v=1
+payload2.bin
+goldhen.bin
+patches/1302.bin
+patches/1350.bin
+patches/1352.bin
+diagnostics.html
+diagnostics.js
+
+NETWORK:
+*
